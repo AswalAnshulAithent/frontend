@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot</title>
+
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+        /* display: flex; */
+        /* margin: 0 auto; */
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      li {
+        margin-bottom: 20px;
+      }
+      p {
+        letter-spacing: 0.6px;
+        line-height: 22px;
+      }
+
+      ul {
+        letter-spacing: 0.6px;
+        line-height: 22px;
+      }
+
+      #chat-container {
+        min-height: 80vh;
+        width: 60%;
+        max-width: 900px;
+        height: 80vh;
+        background-color: white;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      #chatbox {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background-color: #e5e7eb;
+        border-bottom: 1px solid #ccc;
+        border-radius: 10px 10px 0 0;
+        height: 100%;
+      }
+
+      .message {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .message strong {
+        margin-right: 10px;
+      }
+
+      .user-message {
+        justify-content: flex-end;
+        text-align: right;
+        color: #fff;
+        background-color: #1f4488;
+        padding: 10px 15px;
+        border-radius: 15px;
+        margin-left: auto;
+        width: max-content;
+      }
+      .bot-message {
+        background-color: #f1f1f1;
+        color: #333;
+        padding: 10px 15px;
+        border-radius: 15px;
+        display: block;
+        max-width: 75%;
+      }
+
+      #input-container {
+        display: flex;
+        border-top: 1px solid #ccc;
+        background-color: white;
+        padding: 20px;
+        border-radius: 0 0 10px 10px;
+      }
+
+      #message {
+        flex-grow: 1;
+        padding: 15px;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+        font-size: 16px;
+        margin-right: 10px;
+      }
+
+      #send-button {
+        background-color: #1f4488;
+        color: white;
+        border: none;
+        padding: 15px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      #send-button:hover {
+        background-color: #1f4488;
+      }
+
+      #chatbox::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      #chatbox::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      #chatbox::-webkit-scrollbar-thumb {
+        background: #888;
+      }
+
+      #chatbox::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      .typing-indicator {
+        font-style: italic;
+        color: #888;
+      }
+      .logo,
+      .main {
+        display: flex;
+        justify-content: center;
+      }
+    </style>
+
+    <script>
+      let sessionId = Math.random().toString(36).substr(2, 8);
+
+      async function sendMessage() {
+        const userMessage = document.getElementById("message").value;
+
+        // Append the user's message immediately
+        document.getElementById("chatbox").innerHTML += `
+      <div class="message user-message">
+      ${userMessage}
+      </div>`;
+
+        document.getElementById("message").value = ""; // Clear input box immediately
+
+        // Scroll to the bottom of the chatbox
+
+        const chatbox = document.getElementById("chatbox");
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        // Show typing indicator
+        const typingIndicator = document.createElement("div");
+        typingIndicator.classList.add("message", "typing-indicator");
+        typingIndicator.innerHTML = `<strong>Bot:</strong> is typing...`;
+        chatbox.appendChild(typingIndicator);
+        chatbox.scrollTop = chatbox.scrollHeight;
+        //
+
+        const requestBody = {
+          session_id: sessionId,
+          message: userMessage,
+        };
+
+        // const response = await fetch("http://localhost:8000/chat/", {
+        const response = await fetch("http://20.49.1.248:8000/chat/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        const data = await response.json();
+        sessionId = data.session_id; // Save the session ID for continuous conversation
+
+        // Remove typing indicator when the response is received
+        chatbox.removeChild(typingIndicator);
+
+        // Convert bot's markdown response to HTML
+        const botResponseHTML = marked.parse(data.response.data); // Convert markdown to HTML
+
+        // Display the response with typing effect (HTML-safe typing)
+        const botMessageDiv = document.createElement("div");
+        botMessageDiv.classList.add("message", "bot-message");
+        chatbox.appendChild(botMessageDiv);
+
+        // Function to type HTML content while preserving structure
+        typeHtml(botResponseHTML, botMessageDiv);
+
+        chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+      }
+
+      // Function to type HTML content while respecting HTML structure
+      function typeHtml(html, element) {
+        element.innerHTML = html; // Safely assign HTML all at once
+      }
+      // Add event listener to handle Enter key press
+      document
+        .getElementById("message")
+        .addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            sendMessage();
+          }
+        });
+    </script>
+  </head>
+
+  <body>
+    <div class="logo">
+      <img
+        src="images/RhoadsLogo.png"
+        style="width: 200px; margin-bottom: 20px; margin-top: 10px"
+        alt="logo"
+      />
+    </div>
+    <div class="main">
+      <div id="chat-container">
+        <div id="chatbox">
+          <!-- Chat messages will appear here -->
+        </div>
+        <div id="input-container">
+          <input
+            type="text"
+            id="message"
+            placeholder="Type your message here..."
+            onkeydown="if (event.key === 'Enter') sendMessage();"
+          />
+          <button id="send-button" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.12/marked.min.js"></script>
+  </body>
+</html>
